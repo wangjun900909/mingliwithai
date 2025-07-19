@@ -31,11 +31,39 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Date parameter is required' }, { status: 400 });
     }
 
-    // 读取分类数据
-    const filePath = path.join(process.cwd(), 'birthday_intros_classified.json');
+    // 尝试读取分类数据
+    const primaryPath = path.join(process.cwd(), 'birthday_intros_classified.json');
+    const fallbackPath = path.join(process.cwd(), 'birthday_intros_final.json.backup');
     
-    if (!fs.existsSync(filePath)) {
-      return NextResponse.json({ error: 'Birthday classified data not found' }, { status: 404 });
+    let filePath = primaryPath;
+    let dataSource = 'primary';
+    
+    // 如果主数据文件不存在，尝试备用文件
+    if (!fs.existsSync(primaryPath)) {
+      console.log('主分类数据文件不存在，尝试备用文件');
+      filePath = fallbackPath;
+      dataSource = 'fallback';
+      
+      if (!fs.existsSync(fallbackPath)) {
+        console.error('所有分类数据文件都不存在');
+        return NextResponse.json({ 
+          date: date,
+          found: false,
+          data: {
+            kernel: '',
+            love_marriage: '',
+            work_finance: '',
+            personality: '',
+            path_to_self: '',
+            future_self: '',
+            past_self: ''
+          },
+          _metadata: {
+            source: 'none',
+            error: '数据文件不存在'
+          }
+        });
+      }
     }
 
     const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
@@ -55,6 +83,10 @@ export async function GET(request: NextRequest) {
           path_to_self: birthdayData.成为自己的捷径 || '',
           future_self: birthdayData.未来的你 || '',
           past_self: birthdayData.过去的你 || ''
+        },
+        _metadata: {
+          source: dataSource,
+          filePath: filePath
         }
       });
     } else {
@@ -69,6 +101,10 @@ export async function GET(request: NextRequest) {
           path_to_self: '',
           future_self: '',
           past_self: ''
+        },
+        _metadata: {
+          source: dataSource,
+          filePath: filePath
         }
       });
     }
