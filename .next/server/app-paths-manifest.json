@@ -1,3 +1,4 @@
 {
-  "/api/data/route": "app/api/data/route.js"
+  "/api/data/route": "app/api/data/route.js",
+  "/api/birthday-classified/route": "app/api/birthday-classified/route.js"
 }

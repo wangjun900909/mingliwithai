@@ -4,30 +4,24 @@ import * as path from 'path';
 
 export async function GET(request: NextRequest) {
   try {
+    console.log('API调用开始，URL:', request.url);
     const { searchParams } = new URL(request.url);
     let date = searchParams.get('date') || '';
+    console.log('原始date参数:', date);
     
     // 处理URL编码的日期
     if (date) {
-      date = decodeURIComponent(date);
-      // 如果解码后缺少月份数字，尝试修复
-      if (date.startsWith('月')) {
-        // 从URL中提取月份信息
-        const url = request.url;
-        const monthMatch = url.match(/date=(\d+)月/);
-        if (monthMatch) {
-          date = monthMatch[1] + date;
-        } else {
-          // 尝试从编码的URL中提取
-          const encodedMonthMatch = url.match(/date=%E6%9C%88(\d+)/);
-          if (encodedMonthMatch) {
-            date = encodedMonthMatch[1] + date;
-          }
-        }
+      try {
+        date = decodeURIComponent(date);
+        console.log('解码后date参数:', date);
+      } catch (e) {
+        // 如果解码失败，尝试直接使用
+        console.log('URL解码失败，使用原始值:', date);
       }
     }
 
     if (!date) {
+      console.log('date参数为空，返回400错误');
       return NextResponse.json({ error: 'Date parameter is required' }, { status: 400 });
     }
 
@@ -43,10 +37,12 @@ export async function GET(request: NextRequest) {
     
     // 找到第一个存在的数据文件
     for (const file of dataFiles) {
+      console.log('检查文件:', file.path, '存在:', fs.existsSync(file.path));
       if (fs.existsSync(file.path)) {
         filePath = file.path
         dataSource = file.name
         data = JSON.parse(fs.readFileSync(filePath, 'utf8'))
+        console.log('成功加载数据文件:', filePath);
         break
       }
     }
@@ -72,8 +68,10 @@ export async function GET(request: NextRequest) {
       });
     }
     
+    console.log('查找日期:', date, '在数据中:', date in data);
     if (data[date]) {
       const birthdayData = data[date];
+      console.log('找到生日数据');
       
       // 返回结构化的数据
       return NextResponse.json({
@@ -94,6 +92,7 @@ export async function GET(request: NextRequest) {
         }
       });
     } else {
+      console.log('未找到日期数据');
       return NextResponse.json({ 
         date: date,
         found: false,

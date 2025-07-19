@@ -30,13 +30,28 @@ export async function GET() {
     const data = fs.readFileSync(dataPath, 'utf-8')
     const jsonData = JSON.parse(data)
     
-    console.log(`成功加载数据，来源: ${dataSource}`)
+    // 如果数据是数组格式，转换为对象格式
+    let matches: Record<string, any> = {}
+    if (Array.isArray(jsonData)) {
+      jsonData.forEach((item: any) => {
+        if (item.主日期 && item.匹配) {
+          matches[item.主日期] = item.匹配
+        }
+      })
+    } else if (jsonData.matches) {
+      matches = jsonData.matches
+    } else {
+      matches = jsonData
+    }
+    
+    console.log(`成功加载数据，来源: ${dataSource}, 匹配数量: ${Object.keys(matches).length}`)
     
     return NextResponse.json({
-      ...jsonData,
+      matches: matches,
       _metadata: {
         source: dataSource,
-        filePath: dataPath
+        filePath: dataPath,
+        matchCount: Object.keys(matches).length
       }
     })
   } catch (error) {
