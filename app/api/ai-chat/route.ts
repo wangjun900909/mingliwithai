@@ -361,17 +361,20 @@ async function tryYuanbaoService(serviceUrl: string, userContext: string) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { messages, userInfo, aiService = 'auto' }: { messages: Message[], userInfo: UserInfo, aiService?: string } = await req.json();
+    const { messages, userInfo, aiService = 'auto' }: { messages: Message[], userInfo?: UserInfo, aiService?: string } = await req.json();
     
-    console.log('收到AI聊天请求:', { aiService, userInfo: { mbti: userInfo.mbti, birthday: userInfo.birthday?.date } });
+    console.log('收到AI聊天请求:', { aiService, userInfo: userInfo ? { mbti: userInfo.mbti, birthday: userInfo.birthday?.date } : 'undefined' });
     
     // 验证输入
-    if (!messages || !userInfo) {
+    if (!messages) {
       return NextResponse.json(
         { error: '缺少必要参数' },
         { status: 400 }
       );
     }
+    
+    // 确保userInfo存在
+    const safeUserInfo: UserInfo = userInfo || {};
     
     // 获取要尝试的服务列表
     const servicesToTry = MCP_SERVICES[aiService as keyof typeof MCP_SERVICES] || MCP_SERVICES.auto;
@@ -381,8 +384,8 @@ export async function POST(req: NextRequest) {
     let birthdayIntro = '';
     let dateMatches = '';
     
-    if (userInfo.birthday?.date) {
-      const birthdayDate = userInfo.birthday.date;
+    if (safeUserInfo.birthday?.date) {
+      const birthdayDate = safeUserInfo.birthday.date;
       console.log('获取生日数据:', birthdayDate);
       
       // 获取生日介绍数据
@@ -403,9 +406,9 @@ export async function POST(req: NextRequest) {
     // 构建用户上下文信息
     const userContext = `
 用户信息：
-- MBTI: ${userInfo.mbti || '未填写'}
-- 性别: ${userInfo.gender === 'male' ? '男' : userInfo.gender === 'female' ? '女' : '其他'}
-- 年龄: ${userInfo.age || '未填写'}岁
+- MBTI: ${safeUserInfo.mbti || '未填写'}
+- 性别: ${safeUserInfo.gender === 'male' ? '男' : safeUserInfo.gender === 'female' ? '女' : '其他'}
+- 年龄: ${safeUserInfo.age || '未填写'}岁
 - 婚姻状况: ${(() => {
   const statusMap: Record<string, string> = {
     'single': '单身',
@@ -414,7 +417,7 @@ export async function POST(req: NextRequest) {
     'widowed': '丧偶',
     'other': '其他'
   };
-  return statusMap[userInfo.maritalStatus || ''] || '未填写';
+  return statusMap[safeUserInfo.maritalStatus || ''] || '未填写';
 })()}
 - 子女情况: ${(() => {
   const childrenMap: Record<string, string> = {
@@ -424,11 +427,11 @@ export async function POST(req: NextRequest) {
     'three': '3个孩子',
     'more': '3个以上孩子'
   };
-  return childrenMap[userInfo.hasChildren || ''] || '未填写';
+  return childrenMap[safeUserInfo.hasChildren || ''] || '未填写';
 })()}
-- 职业: ${userInfo.profession || '未填写'}
-- 当前状态: ${userInfo.status || '未填写'}
-- 生日: ${userInfo.birthday?.date || '未选择'}
+- 职业: ${safeUserInfo.profession || '未填写'}
+- 当前状态: ${safeUserInfo.status || '未填写'}
+- 生日: ${safeUserInfo.birthday?.date || '未选择'}
 
 ${birthdayIntro}
 
@@ -479,7 +482,7 @@ ${messages.map((msg: Message) => `${msg.role === 'user' ? '用户' : 'AI'}: ${ms
         successfulResponse = result.value.data;
         usedService = result.value.serviceUrl;
         console.log('找到成功的服务:', usedService);
-        break;
+        break
       }
     }
     
@@ -495,7 +498,7 @@ ${messages.map((msg: Message) => `${msg.role === 'user' ? '用户' : 'AI'}: ${ms
         // 提供默认回复
         console.log('使用默认回复');
         return NextResponse.json({ 
-          response: generateDefaultResponse(userInfo),
+          response: generateDefaultResponse(safeUserInfo),
           service: usedService
         });
       }
@@ -503,7 +506,7 @@ ${messages.map((msg: Message) => `${msg.role === 'user' ? '用户' : 'AI'}: ${ms
       // 所有服务都失败了，提供友好的错误回复
       console.error('所有AI服务都不可用');
       return NextResponse.json({ 
-        response: generateFallbackResponse(userInfo)
+        response: generateFallbackResponse(safeUserInfo)
       });
     }
     
