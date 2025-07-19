@@ -1,37 +1,7 @@
 import { NextResponse } from 'next/server'
 import * as fs from 'fs'
 import * as path from 'path'
-
-// 嵌入小型测试数据，确保基本功能可用
-const FALLBACK_DATA = [
-  {
-    "主日期": "1月1日",
-    "匹配": {
-      "情人伴侣": ["1月1日", "2月2日", "3月3日"],
-      "工作伙伴朋友": ["4月4日", "5月5日", "6月6日"],
-      "竞争对手天敌": ["7月7日", "8月8日"],
-      "灵魂伴侣": ["9月9日", "10月10日"]
-    }
-  },
-  {
-    "主日期": "1月2日",
-    "匹配": {
-      "情人伴侣": ["2月1日", "3月2日"],
-      "工作伙伴朋友": ["4月1日", "5月2日"],
-      "竞争对手天敌": ["6月1日"],
-      "灵魂伴侣": ["7月1日", "8月2日"]
-    }
-  },
-  {
-    "主日期": "1月3日",
-    "匹配": {
-      "情人伴侣": ["2月3日", "3月1日"],
-      "工作伙伴朋友": ["4月2日", "5月3日"],
-      "竞争对手天敌": ["6月2日"],
-      "灵魂伴侣": ["7月2日", "8月3日"]
-    }
-  }
-]
+import { COMPRESSED_ENHANCED_DATA, decompressData } from '../../lib/compressed-data'
 
 export async function GET() {
   try {
@@ -55,12 +25,13 @@ export async function GET() {
     }
     
     if (!dataPath) {
-      console.log('所有数据文件都不存在，使用内置测试数据')
+      console.log('所有数据文件都不存在，使用压缩的完整数据')
+      const jsonData = decompressData(COMPRESSED_ENHANCED_DATA)
       return NextResponse.json({
-        ...FALLBACK_DATA,
+        ...jsonData,
         _metadata: {
-          source: 'embedded',
-          message: '使用内置测试数据'
+          source: 'compressed_embedded',
+          message: '使用压缩的完整数据'
         }
       })
     }
@@ -79,13 +50,19 @@ export async function GET() {
     })
   } catch (error) {
     console.error('读取数据失败:', error)
-    console.log('使用内置测试数据作为备用')
-    return NextResponse.json({
-      ...FALLBACK_DATA,
-      _metadata: {
-        source: 'embedded_fallback',
-        error: error instanceof Error ? error.message : '未知错误'
-      }
-    })
+    console.log('使用压缩数据作为备用')
+    try {
+      const jsonData = decompressData(COMPRESSED_ENHANCED_DATA)
+      return NextResponse.json({
+        ...jsonData,
+        _metadata: {
+          source: 'compressed_fallback',
+          error: error instanceof Error ? error.message : '未知错误'
+        }
+      })
+    } catch (decompressError) {
+      console.error('解压数据也失败:', decompressError)
+      return NextResponse.json({ error: '数据加载失败' }, { status: 500 })
+    }
   }
 } 
