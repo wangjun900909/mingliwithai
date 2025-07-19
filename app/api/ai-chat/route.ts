@@ -128,29 +128,28 @@ function formatDateMatches(matches: any): string {
   return formatted;
 }
 
-// 使用MCP SDK调用DeepSeek服务
+// 使用官方API调用DeepSeek服务
 async function tryDeepSeekService(serviceUrl: string, userContext: string) {
   try {
     console.log(`尝试调用DeepSeek服务: ${serviceUrl}`);
     
-    // 使用MCP SDK直接调用
-    const response = await fetch(`${serviceUrl}/mcp`, {
+    // 直接使用DeepSeek官方API
+    const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'User-Agent': 'Mozilla/5.0 (compatible; AI-Chat-App/1.0)',
-        'Accept': 'application/json'
+        'Authorization': 'Bearer sk-1234567890abcdef' // 需要真实的API密钥
       },
       body: JSON.stringify({
-        method: 'tools/call',
-        params: {
-          name: 'deepseek_chat',
-          arguments: {
-            message: userContext,
-            max_tokens: 2000,
-            temperature: 0.7
+        model: 'deepseek-chat',
+        messages: [
+          {
+            role: 'user',
+            content: userContext
           }
-        }
+        ],
+        max_tokens: 2000,
+        temperature: 0.7
       })
     });
     
@@ -165,13 +164,17 @@ async function tryDeepSeekService(serviceUrl: string, userContext: string) {
     const data = await response.json();
     console.log(`DeepSeek服务响应数据:`, data);
     
-    if (data.result && data.result.content) {
-      return { success: true, data: { final_result: data.result.content }, serviceUrl };
+    if (data.choices && data.choices[0] && data.choices[0].message) {
+      return { 
+        success: true, 
+        data: { final_result: data.choices[0].message.content }, 
+        serviceUrl 
+      };
     } else {
-      throw new Error(data.error || '服务返回错误');
+      throw new Error('DeepSeek服务返回格式错误');
     }
   } catch (error) {
-    console.error(`DeepSeek服务 ${serviceUrl} 调用失败:`, error);
+    console.error(`DeepSeek服务调用失败:`, error);
     return { 
       success: false, 
       error: error instanceof Error ? error.message : '未知错误', 
@@ -180,29 +183,28 @@ async function tryDeepSeekService(serviceUrl: string, userContext: string) {
   }
 }
 
-// 使用MCP SDK调用豆包AI服务
+// 使用官方API调用豆包AI服务
 async function tryDoubaoService(serviceUrl: string, userContext: string) {
   try {
     console.log(`尝试调用豆包AI服务: ${serviceUrl}`);
     
-    // 使用MCP SDK直接调用
-    const response = await fetch(`${serviceUrl}/mcp`, {
+    // 直接使用豆包官方API
+    const response = await fetch('https://ark.cn-beijing.volces.com/api/v3/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'User-Agent': 'Mozilla/5.0 (compatible; AI-Chat-App/1.0)',
-        'Accept': 'application/json'
+        'Authorization': 'Bearer 6397d7fc-8c2a-4f09-97c6-cbef59557aa7'
       },
       body: JSON.stringify({
-        method: 'tools/call',
-        params: {
-          name: 'doubao_chat',
-          arguments: {
-            message: userContext,
-            max_tokens: 2000,
-            temperature: 0.7
+        model: 'doubao-1-5-pro-32k-character-250228',
+        messages: [
+          {
+            role: 'user',
+            content: userContext
           }
-        }
+        ],
+        max_tokens: 2000,
+        temperature: 0.7
       })
     });
     
@@ -217,13 +219,17 @@ async function tryDoubaoService(serviceUrl: string, userContext: string) {
     const data = await response.json();
     console.log(`豆包AI服务响应数据:`, data);
     
-    if (data.result && data.result.content) {
-      return { success: true, data: { final_result: data.result.content }, serviceUrl };
+    if (data.choices && data.choices[0] && data.choices[0].message) {
+      return { 
+        success: true, 
+        data: { final_result: data.choices[0].message.content }, 
+        serviceUrl 
+      };
     } else {
-      throw new Error(data.error || '豆包AI服务返回错误');
+      throw new Error('豆包AI服务返回格式错误');
     }
   } catch (error) {
-    console.error(`豆包AI服务 ${serviceUrl} 调用失败:`, error);
+    console.error(`豆包AI服务调用失败:`, error);
     return { 
       success: false, 
       error: error instanceof Error ? error.message : '未知错误', 

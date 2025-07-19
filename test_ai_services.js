@@ -11,17 +11,20 @@ const TEST_CONFIG = {
     {
       name: 'DeepSeek',
       url: 'https://deepseek-production-c479.up.railway.app',
-      endpoint: '/api/chat'
+      endpoint: '/mcp',
+      method: 'deepseek_chat'
     },
     {
       name: '豆包AI',
       url: 'https://doubao-production-53b8.up.railway.app',
-      endpoint: '/api/chat'
+      endpoint: '/mcp',
+      method: 'doubao_chat'
     },
     {
       name: '元宝AI',
       url: 'https://yuanbao-production.up.railway.app',
-      endpoint: '/api/chat'
+      endpoint: '/api/chat',
+      method: 'yuanbao'
     }
   ],
   testMessage: '你好，请简单介绍一下自己',
@@ -39,6 +42,28 @@ async function testService(service) {
     
     const startTime = Date.now();
     
+    let requestBody;
+    if (service.method === 'yuanbao') {
+      // 元宝AI使用特殊格式
+      requestBody = {
+        input: TEST_CONFIG.testMessage,
+        custom_prompt: "请基于用户信息提供个性化的建议和分析，用友好的语气回答。"
+      };
+    } else {
+      // MCP格式
+      requestBody = {
+        method: 'tools/call',
+        params: {
+          name: service.method,
+          arguments: {
+            message: TEST_CONFIG.testMessage,
+            max_tokens: 500,
+            temperature: 0.7
+          }
+        }
+      };
+    }
+    
     const response = await fetch(`${service.url}${service.endpoint}`, {
       method: 'POST',
       headers: {
@@ -46,11 +71,7 @@ async function testService(service) {
         'User-Agent': 'Mozilla/5.0 (compatible; AI-Chat-App/1.0)',
         'Accept': 'application/json'
       },
-      body: JSON.stringify({
-        message: TEST_CONFIG.testMessage,
-        max_tokens: 500,
-        temperature: 0.7
-      }),
+      body: JSON.stringify(requestBody),
       signal: controller.signal
     });
     
@@ -77,15 +98,21 @@ async function testService(service) {
     
     // 检查响应格式
     let responseText = '';
-    if (data.success && data.response) {
-      responseText = data.response;
-    } else if (data.final_result) {
-      responseText = data.final_result;
-    } else if (data.response) {
-      responseText = data.response;
-    } else if (data.data && data.data.response) {
-      responseText = data.data.response;
+    if (service.method === 'yuanbao') {
+      // 元宝AI特殊处理
+      if (data.success && data.data && data.data.response) {
+        responseText = data.data.response;
+      }
     } else {
+      // MCP格式处理
+      if (data.result && data.result.content) {
+        responseText = data.result.content;
+      } else if (data.content) {
+        responseText = data.content;
+      }
+    }
+    
+    if (!responseText) {
       console.log(`⚠️  未知响应格式`);
       return {
         service: service.name,
