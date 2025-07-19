@@ -31,39 +31,44 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Date parameter is required' }, { status: 400 });
     }
 
-    // 尝试读取分类数据
-    const primaryPath = path.join(process.cwd(), 'birthday_intros_classified.json');
-    const fallbackPath = path.join(process.cwd(), 'birthday_intros_final.json.backup');
+    // 按优先级尝试读取分类数据
+    const dataFiles = [
+      { path: path.join(process.cwd(), 'mini_birthday_intros_classified.json'), name: 'mini_classified' },
+      { path: path.join(process.cwd(), 'birthday_intros_classified.json'), name: 'primary' },
+      { path: path.join(process.cwd(), 'birthday_intros_final.json.backup'), name: 'fallback' }
+    ]
     
-    let filePath = primaryPath;
-    let dataSource = 'primary';
+    let filePath = null
+    let dataSource = 'none'
     
-    // 如果主数据文件不存在，尝试备用文件
-    if (!fs.existsSync(primaryPath)) {
-      console.log('主分类数据文件不存在，尝试备用文件');
-      filePath = fallbackPath;
-      dataSource = 'fallback';
-      
-      if (!fs.existsSync(fallbackPath)) {
-        console.error('所有分类数据文件都不存在');
-        return NextResponse.json({ 
-          date: date,
-          found: false,
-          data: {
-            kernel: '',
-            love_marriage: '',
-            work_finance: '',
-            personality: '',
-            path_to_self: '',
-            future_self: '',
-            past_self: ''
-          },
-          _metadata: {
-            source: 'none',
-            error: '数据文件不存在'
-          }
-        });
+    // 找到第一个存在的数据文件
+    for (const file of dataFiles) {
+      if (fs.existsSync(file.path)) {
+        filePath = file.path
+        dataSource = file.name
+        break
       }
+    }
+    
+    if (!filePath) {
+      console.error('所有分类数据文件都不存在');
+      return NextResponse.json({ 
+        date: date,
+        found: false,
+        data: {
+          kernel: '',
+          love_marriage: '',
+          work_finance: '',
+          personality: '',
+          path_to_self: '',
+          future_self: '',
+          past_self: ''
+        },
+        _metadata: {
+          source: 'none',
+          error: '数据文件不存在'
+        }
+      });
     }
 
     const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
