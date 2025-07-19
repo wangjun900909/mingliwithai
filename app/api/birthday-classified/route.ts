@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as fs from 'fs';
 import * as path from 'path';
-import { SIMPLIFIED_CLASSIFIED_DATA } from '../../lib/compressed-data';
 
 export async function GET(request: NextRequest) {
   try {
@@ -34,7 +33,6 @@ export async function GET(request: NextRequest) {
 
     // 按优先级尝试读取分类数据
     const dataFiles = [
-      { path: path.join(process.cwd(), 'mini_birthday_intros_classified.json'), name: 'mini_classified' },
       { path: path.join(process.cwd(), 'birthday_intros_classified.json'), name: 'primary' },
       { path: path.join(process.cwd(), 'birthday_intros_final.json.backup'), name: 'fallback' }
     ]
@@ -53,11 +51,25 @@ export async function GET(request: NextRequest) {
       }
     }
     
-    // 如果所有文件都不存在，使用简化的嵌入数据
     if (!data) {
-      console.log('所有分类数据文件都不存在，使用简化的嵌入数据')
-      data = SIMPLIFIED_CLASSIFIED_DATA
-      dataSource = 'simplified_embedded'
+      console.error('所有分类数据文件都不存在');
+      return NextResponse.json({ 
+        date: date,
+        found: false,
+        data: {
+          kernel: '',
+          love_marriage: '',
+          work_finance: '',
+          personality: '',
+          path_to_self: '',
+          future_self: '',
+          past_self: ''
+        },
+        _metadata: {
+          source: 'none',
+          error: '数据文件不存在'
+        }
+      });
     }
     
     if (data[date]) {
@@ -78,7 +90,7 @@ export async function GET(request: NextRequest) {
         },
         _metadata: {
           source: dataSource,
-          filePath: filePath || 'embedded'
+          filePath: filePath
         }
       });
     } else {
@@ -96,34 +108,12 @@ export async function GET(request: NextRequest) {
         },
         _metadata: {
           source: dataSource,
-          filePath: filePath || 'embedded'
+          filePath: filePath
         }
       });
     }
   } catch (error) {
     console.error('Error reading birthday classified data:', error);
-    // 出错时也使用简化数据
-    const date = new URL(request.url).searchParams.get('date') || '';
-    if (SIMPLIFIED_CLASSIFIED_DATA[date as keyof typeof SIMPLIFIED_CLASSIFIED_DATA]) {
-      const birthdayData = SIMPLIFIED_CLASSIFIED_DATA[date as keyof typeof SIMPLIFIED_CLASSIFIED_DATA];
-      return NextResponse.json({
-        date: date,
-        found: true,
-        data: {
-          kernel: birthdayData.内核 || '',
-          love_marriage: birthdayData.恋爱与婚姻 || '',
-          work_finance: birthdayData.工作与财运 || '',
-          personality: birthdayData.个性特征 || '',
-          path_to_self: birthdayData.成为自己的捷径 || '',
-          future_self: birthdayData.未来的你 || '',
-          past_self: birthdayData.过去的你 || ''
-        },
-        _metadata: {
-          source: 'simplified_error_fallback',
-          error: error instanceof Error ? error.message : '未知错误'
-        }
-      });
-    }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 } 
