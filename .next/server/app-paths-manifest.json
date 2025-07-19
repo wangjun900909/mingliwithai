@@ -1,0 +1,4 @@
+{
+  "/api/birthday-classified/route": "app/api/birthday-classified/route.js",
+  "/page": "app/page.js"
+}

@@ -1,0 +1,8 @@
+aiohttp>=3.8.0
+asyncio
+json
+uuid
+time
+dataclasses
+urllib.parse
+pathlib 

@@ -1,0 +1,19 @@
+{
+  "created_at": "2025-07-19T22:36:46.753Z",
+  "version": "1.0.0",
+  "description": "生日知识库 - 包含生日介绍和匹配数据",
+  "files": {
+    "birthday_intros": {
+      "path": "birthday_intros.json",
+      "description": "生日介绍数据，包含性格特征、恋爱婚姻、工作财运等信息"
+    },
+    "date_matches": {
+      "path": "date_matches.json",
+      "description": "生日匹配数据，包含情人伴侣、朋友、同事等匹配关系"
+    }
+  },
+  "total_dates": 307,
+  "enhanced_total_matches": 366,
+  "standard_total_matches": 0,
+  "total_matches": 366
+}

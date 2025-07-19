@@ -1,0 +1,141 @@
+/* 手机端优化样式 */
+
+/* 防止页面缩放 */
+@media screen and (max-width: 768px) {
+  html {
+    -webkit-text-size-adjust: 100%;
+    -ms-text-size-adjust: 100%;
+  }
+}
+
+/* 手机端触摸优化 */
+@media (hover: none) and (pointer: coarse) {
+  /* 增大触摸目标 */
+  button, a {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* 优化输入框 */
+  input, select, textarea {
+    font-size: 16px !important; /* 防止iOS缩放 */
+  }
+}
+
+/* 手机端滚动优化 */
+.scrollbar-hide {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 手机端聊天区域优化 */
+@media screen and (max-width: 768px) {
+  .chat-container {
+    height: calc(100vh - 200px);
+    max-height: 400px;
+  }
+  
+  .message-bubble {
+    max-width: 85%;
+    word-wrap: break-word;
+  }
+}
+
+/* 手机端表单优化 */
+@media screen and (max-width: 768px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .input-field {
+    font-size: 16px;
+    padding: 12px;
+  }
+}
+
+/* 手机端按钮优化 */
+@media screen and (max-width: 768px) {
+  .mobile-button {
+    padding: 12px 16px;
+    font-size: 14px;
+    border-radius: 8px;
+  }
+  
+  .mobile-button-small {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+}
+
+/* 手机端间距优化 */
+@media screen and (max-width: 768px) {
+  .mobile-spacing {
+    margin: 8px 0;
+    padding: 8px;
+  }
+  
+  .mobile-spacing-large {
+    margin: 16px 0;
+    padding: 16px;
+  }
+}
+
+/* 手机端文本优化 */
+@media screen and (max-width: 768px) {
+  .mobile-text-small {
+    font-size: 12px;
+  }
+  
+  .mobile-text-base {
+    font-size: 14px;
+  }
+  
+  .mobile-text-large {
+    font-size: 16px;
+  }
+}
+
+/* 手机端隐藏/显示优化 */
+@media screen and (max-width: 768px) {
+  .mobile-hidden {
+    display: none;
+  }
+  
+  .mobile-visible {
+    display: block;
+  }
+}
+
+/* 手机端动画优化 */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* 手机端焦点优化 */
+@media screen and (max-width: 768px) {
+  input:focus,
+  select:focus,
+  textarea:focus,
+  button:focus {
+    outline: 2px solid #8b5cf6;
+    outline-offset: 2px;
+  }
+}
+
+/* 手机端键盘优化 */
+@media screen and (max-width: 768px) {
+  .keyboard-avoid {
+    padding-bottom: 20px;
+  }
+  
+  .input-container {
+    position: sticky;
+    bottom: 0;
+    background: white;
+    padding: 8px;
+    border-top: 1px solid #e5e7eb;
+  }
+} 
