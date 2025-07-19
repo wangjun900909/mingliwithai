@@ -134,11 +134,11 @@ async function tryDeepSeekService(serviceUrl: string, userContext: string) {
     console.log(`尝试调用DeepSeek服务: ${serviceUrl}`);
     
     // 直接使用DeepSeek官方API
-    const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+    const response = await fetch('https://api.deepseek.com/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer sk-1234567890abcdef' // 需要真实的API密钥
+        'Authorization': 'Bearer sk-9f65195f825d4cc5a4626a898496d77a'
       },
       body: JSON.stringify({
         model: 'deepseek-chat',
@@ -148,6 +148,7 @@ async function tryDeepSeekService(serviceUrl: string, userContext: string) {
             content: userContext
           }
         ],
+        stream: false,
         max_tokens: 2000,
         temperature: 0.7
       })
