@@ -12,6 +12,7 @@ const AI_SERVICES = [
 ];
 
 export default function AIChatSection({ birthdayData }: { birthdayData: any }) {
+  const [username, setUsername] = useState('');
   const [userInfo, setUserInfo] = useState<UserInfo>({
     mbti: '',
     gender: '',
@@ -26,6 +27,8 @@ export default function AIChatSection({ birthdayData }: { birthdayData: any }) {
   const [isLoading, setIsLoading] = useState(false);
   const [showForm, setShowForm] = useState(true);
   const [selectedAIService, setSelectedAIService] = useState('yuanbao');
+  const [isLoadingUser, setIsLoadingUser] = useState(false);
+  const [isSavingUser, setIsSavingUser] = useState(false);
   const messagesEndRef = useRef<null | HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -42,6 +45,73 @@ export default function AIChatSection({ birthdayData }: { birthdayData: any }) {
     const updatedInfo = { ...userInfo, ...newUserInfo };
     setUserInfo(updatedInfo);
     CookieManager.saveUserInfo(updatedInfo);
+  };
+
+  // 加载用户信息
+  const loadUserData = async () => {
+    if (!username.trim()) {
+      alert('请输入用户名');
+      return;
+    }
+
+    setIsLoadingUser(true);
+    try {
+      const response = await fetch(`/api/users?username=${encodeURIComponent(username)}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.data) {
+          setUserInfo(data.data.userInfo);
+          setMessages(data.data.messages || []);
+          alert('用户信息加载成功！');
+        }
+      } else if (response.status === 404) {
+        alert('用户不存在，请输入正确的用户名');
+      } else {
+        alert('加载用户信息失败');
+      }
+    } catch (error) {
+      console.error('加载用户信息失败:', error);
+      alert('加载用户信息失败');
+    } finally {
+      setIsLoadingUser(false);
+    }
+  };
+
+  // 保存用户信息到数据库
+  const saveUserData = async () => {
+    if (!username.trim()) {
+      alert('请输入用户名');
+      return;
+    }
+
+    setIsSavingUser(true);
+    try {
+      const response = await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username,
+          userInfo: {
+            ...userInfo,
+            birthday: birthdayData
+          },
+          messages
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        alert(data.message || '用户信息保存成功！');
+      } else {
+        alert('保存用户信息失败');
+      }
+    } catch (error) {
+      console.error('保存用户信息失败:', error);
+      alert('保存用户信息失败');
+    } finally {
+      setIsSavingUser(false);
+    }
   };
 
   // 滚动到底部
@@ -101,6 +171,38 @@ export default function AIChatSection({ birthdayData }: { birthdayData: any }) {
     <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6">
       <h2 className="text-xl sm:text-2xl font-bold text-center mb-4 sm:mb-6 text-purple-700">AI 智能对话分析</h2>
       
+      {/* 用户名管理 */}
+      <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-blue-50 rounded-lg">
+        <div className="flex items-center gap-2 mb-3">
+          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+          <span className="text-xs sm:text-sm text-blue-700">用户信息管理</span>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <input
+            type="text"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            placeholder="请输入用户名"
+            className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+          <button
+            onClick={loadUserData}
+            disabled={isLoadingUser}
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 text-sm font-medium"
+          >
+            {isLoadingUser ? '加载中...' : '加载资料'}
+          </button>
+          <button
+            onClick={saveUserData}
+            disabled={isSavingUser}
+            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-400 text-sm font-medium"
+          >
+            {isSavingUser ? '保存中...' : '保存资料'}
+          </button>
+        </div>
+        <p className="text-xs text-blue-600 mt-2">输入用户名可加载之前保存的个人信息和对话记录</p>
+      </div>
+      
       {/* AI服务选择 */}
       <div className="mb-4 sm:mb-6">
         <label className="block text-sm font-medium text-gray-700 mb-2">选择AI服务</label>
@@ -134,6 +236,17 @@ export default function AIChatSection({ birthdayData }: { birthdayData: any }) {
         
         <div className={`${showForm ? 'block' : 'hidden'} sm:block`}>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">用户名</label>
+              <input
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                placeholder="请输入用户名"
+              />
+            </div>
+            
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">MBTI类型</label>
               <input
