@@ -58,18 +58,23 @@ export async function GET(request: NextRequest) {
     let filePath = null
     let dataSource = 'none'
     let data = null
+    let fileErrors = []
     
     // 找到第一个存在的数据文件
     for (const file of dataFiles) {
-      if (fs.existsSync(file.path)) {
-        filePath = file.path
-        dataSource = file.name
-        try {
-          data = JSON.parse(fs.readFileSync(filePath, 'utf8'))
+      try {
+        if (fs.existsSync(file.path)) {
+          filePath = file.path
+          dataSource = file.name
+          const fileContent = fs.readFileSync(filePath, 'utf8')
+          data = JSON.parse(fileContent)
           break
-        } catch (parseError) {
-          continue
+        } else {
+          fileErrors.push(`${file.name}: 文件不存在 (${file.path})`)
         }
+      } catch (error) {
+        fileErrors.push(`${file.name}: ${error instanceof Error ? error.message : String(error)}`)
+        continue
       }
     }
     
@@ -89,7 +94,22 @@ export async function GET(request: NextRequest) {
         _metadata: {
           source: 'none',
           error: '数据文件不存在或无法读取',
-          filesChecked: dataFiles.map(f => ({ name: f.name, path: f.path, exists: fs.existsSync(f.path) }))
+          filesChecked: dataFiles.map(f => ({ 
+            name: f.name, 
+            path: f.path, 
+            exists: fs.existsSync(f.path),
+            readable: (() => {
+              try {
+                fs.accessSync(f.path, fs.constants.R_OK)
+                return true
+              } catch {
+                return false
+              }
+            })()
+          })),
+          fileErrors: fileErrors,
+          cwd: process.cwd(),
+          env: process.env.NODE_ENV
         }
       });
     }
@@ -131,14 +151,16 @@ export async function GET(request: NextRequest) {
         _metadata: {
           source: dataSource,
           filePath: filePath,
-          availableDates: Object.keys(data).slice(0, 5) // 显示前5个可用日期
+          availableDates: Object.keys(data).slice(0, 5), // 显示前5个可用日期
+          totalDates: Object.keys(data).length
         }
       });
     }
   } catch (error) {
     return NextResponse.json({ 
       error: 'Internal server error',
-      details: error instanceof Error ? error.message : String(error)
+      details: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
     }, { status: 500 });
   }
 } 
