@@ -60,8 +60,15 @@ export async function GET(request: NextRequest) {
 
     // 按优先级尝试读取分类数据
     const dataFiles = [
-      { path: path.join(process.cwd(), 'birthday_intros_classified.json'), name: 'primary' },
-      { path: path.join(process.cwd(), 'birthday_intros_final.json.backup'), name: 'fallback' }
+      // 根目录
+      { path: path.join(process.cwd(), 'birthday_intros_classified.json'), name: 'primary_root' },
+      { path: path.join(process.cwd(), 'birthday_intros_final.json.backup'), name: 'fallback_root' },
+      // public目录
+      { path: path.join(process.cwd(), 'public', 'data', 'birthday_intros_classified.json'), name: 'primary_public' },
+      { path: path.join(process.cwd(), 'public', 'data', 'birthday_intros_final.json.backup'), name: 'fallback_public' },
+      // 相对路径
+      { path: './birthday_intros_classified.json', name: 'primary_relative' },
+      { path: './birthday_intros_final.json.backup', name: 'fallback_relative' }
     ]
     
     console.log('尝试读取的文件路径:');
