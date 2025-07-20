@@ -4,7 +4,11 @@ import * as path from 'path';
 
 export async function GET(request: NextRequest) {
   try {
+    console.log('=== 生日介绍API开始执行 ===');
+    console.log('当前工作目录:', process.cwd());
+    console.log('Node环境:', process.env.NODE_ENV);
     console.log('API调用开始，URL:', request.url);
+    
     const { searchParams } = new URL(request.url);
     let date = searchParams.get('date') || '';
     console.log('原始date参数:', date);
@@ -60,6 +64,12 @@ export async function GET(request: NextRequest) {
       { path: path.join(process.cwd(), 'birthday_intros_final.json.backup'), name: 'fallback' }
     ]
     
+    console.log('尝试读取的文件路径:');
+    dataFiles.forEach(file => {
+      console.log(`- ${file.name}: ${file.path}`);
+      console.log(`  文件存在: ${fs.existsSync(file.path)}`);
+    });
+    
     let filePath = null
     let dataSource = 'none'
     let data = null
@@ -70,14 +80,21 @@ export async function GET(request: NextRequest) {
       if (fs.existsSync(file.path)) {
         filePath = file.path
         dataSource = file.name
-        data = JSON.parse(fs.readFileSync(filePath, 'utf8'))
-        console.log('成功加载数据文件:', filePath);
-        break
+        try {
+          data = JSON.parse(fs.readFileSync(filePath, 'utf8'))
+          console.log('成功加载数据文件:', filePath);
+          console.log('数据文件大小:', fs.statSync(filePath).size, 'bytes');
+          console.log('数据键数量:', Object.keys(data).length);
+          break
+        } catch (parseError) {
+          console.error('解析数据文件失败:', parseError);
+          continue
+        }
       }
     }
     
     if (!data) {
-      console.error('所有分类数据文件都不存在');
+      console.error('所有分类数据文件都不存在或无法读取');
       return NextResponse.json({ 
         date: date,
         found: false,
@@ -92,7 +109,8 @@ export async function GET(request: NextRequest) {
         },
         _metadata: {
           source: 'none',
-          error: '数据文件不存在'
+          error: '数据文件不存在或无法读取',
+          filesChecked: dataFiles.map(f => ({ name: f.name, path: f.path, exists: fs.existsSync(f.path) }))
         }
       });
     }
@@ -136,12 +154,17 @@ export async function GET(request: NextRequest) {
         },
         _metadata: {
           source: dataSource,
-          filePath: filePath
+          filePath: filePath,
+          availableDates: Object.keys(data).slice(0, 5) // 显示前5个可用日期
         }
       });
     }
   } catch (error) {
     console.error('Error reading birthday classified data:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ 
+      error: 'Internal server error',
+      details: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
+    }, { status: 500 });
   }
 } 
