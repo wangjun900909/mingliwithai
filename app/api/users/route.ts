@@ -7,16 +7,29 @@ const MONGODB_URI = process.env.MONGODB_URI;
 const DB_NAME = 'mingliwithai';
 const COLLECTION_NAME = 'users';
 
-// 获取MongoDB客户端
+// MongoDB连接池
+let mongoClient: MongoClient | null = null;
+
+// 获取MongoDB客户端（使用连接池）
 async function getMongoClient() {
   try {
     if (!MONGODB_URI) {
       throw new Error('MONGODB_URI环境变量未设置');
     }
     
-    const client = new MongoClient(MONGODB_URI);
-    await client.connect();
-    return client;
+    // 如果连接池中没有客户端，创建新的
+    if (!mongoClient) {
+      mongoClient = new MongoClient(MONGODB_URI, {
+        maxPoolSize: 10,
+        minPoolSize: 1,
+        maxIdleTimeMS: 30000,
+        serverSelectionTimeoutMS: 5000,
+        socketTimeoutMS: 45000,
+      });
+      await mongoClient.connect();
+    }
+    
+    return mongoClient;
   } catch (error) {
     throw error;
   }
@@ -45,7 +58,6 @@ export async function GET(req: NextRequest) {
         const collection = db.collection(COLLECTION_NAME);
         
         const userData = await collection.findOne({ username });
-        await client.close();
         
         if (!userData) {
           return NextResponse.json({ error: '用户不存在' }, { status: 404 });
@@ -108,35 +120,22 @@ export async function POST(req: NextRequest) {
         const db = client.db(DB_NAME);
         const collection = db.collection(COLLECTION_NAME);
         
-        // 检查用户是否已存在
-        const existingUser = await collection.findOne({ username });
-        
-        if (existingUser) {
-          // 更新现有用户
-          await collection.updateOne(
-            { username },
-            {
-              $set: {
-                userInfo,
-                messages,
-                updatedAt: now
-              }
+        // 使用upsert操作，一次性完成插入或更新
+        await collection.updateOne(
+          { username },
+          {
+            $set: {
+              userInfo,
+              messages,
+              updatedAt: now
+            },
+            $setOnInsert: {
+              createdAt: now
             }
-          );
-        } else {
-          // 创建新用户
-          const userData: UserData = {
-            username,
-            userInfo,
-            messages,
-            createdAt: now,
-            updatedAt: now
-          };
-          
-          await collection.insertOne(userData);
-        }
+          },
+          { upsert: true }
+        );
         
-        await client.close();
       } catch (mongoError) {
         // 如果MongoDB失败，回退到内存存储
         const existingUser = memoryStorage.has(username);
@@ -144,7 +143,7 @@ export async function POST(req: NextRequest) {
         if (existingUser) {
           const existingData = memoryStorage.get(username);
           memoryStorage.set(username, {
-            ...existingData,
+            ...existingData!,
             userInfo,
             messages,
             updatedAt: now
@@ -169,7 +168,7 @@ export async function POST(req: NextRequest) {
         // 更新现有用户
         const existingData = memoryStorage.get(username);
         memoryStorage.set(username, {
-          ...existingData,
+          ...existingData!,
           userInfo,
           messages,
           updatedAt: now
@@ -219,7 +218,6 @@ export async function DELETE(req: NextRequest) {
         const collection = db.collection(COLLECTION_NAME);
         
         const result = await collection.deleteOne({ username });
-        await client.close();
         
         if (result.deletedCount === 0) {
           return NextResponse.json({ error: '用户不存在' }, { status: 404 });

@@ -1,8 +1,8 @@
-// File: /Users/apple/Downloads/wecalendar/minglifriends/app/api/birthday-classified/route.ts
-import * as entry from '../../../../../app/api/birthday-classified/route.js'
+// File: /Users/apple/Downloads/wecalendar/minglifriends/app/api/users/route.ts
+import * as entry from '../../../../../app/api/users/route.js'
 import type { NextRequest } from 'next/server.js'
 
-type TEntry = typeof import('../../../../../app/api/birthday-classified/route.js')
+type TEntry = typeof import('../../../../../app/api/users/route.js')
 
 // Check that the entry is a valid entry
 checkFields<Diff<{
