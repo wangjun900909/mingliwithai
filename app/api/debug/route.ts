@@ -1,51 +1,42 @@
-import { NextResponse } from 'next/server'
-import * as fs from 'fs'
-import * as path from 'path'
+import { NextRequest, NextResponse } from 'next/server';
+import { MongoClient } from 'mongodb';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const cwd = process.cwd()
-    const files = [
-      'enhanced_date_matches.json',
-      'birthday_intros_classified.json',
-      'date_matches.json'
-    ]
-    
-    const fileStatus: Record<string, any> = {}
-    
-    for (const file of files) {
-      const filePath = path.join(cwd, file)
-      const exists = fs.existsSync(filePath)
-      
-      if (exists) {
-        const stats = fs.statSync(filePath)
-        fileStatus[file] = {
-          exists: true,
-          size: stats.size,
-          path: filePath
-        }
-      } else {
-        fileStatus[file] = {
-          exists: false,
-          path: filePath
-        }
+    const debugInfo: any = {
+      nodeEnv: process.env.NODE_ENV,
+      mongodbUri: process.env.MONGODB_URI ? '已设置' : '未设置',
+      mongodbUriLength: process.env.MONGODB_URI?.length || 0,
+      timestamp: new Date().toISOString()
+    };
+
+    // 尝试连接MongoDB
+    if (process.env.MONGODB_URI) {
+      try {
+        const client = new MongoClient(process.env.MONGODB_URI, {
+          serverSelectionTimeoutMS: 5000,
+        });
+        
+        await client.connect();
+        debugInfo.mongodbConnection = '成功';
+        await client.close();
+      } catch (error) {
+        debugInfo.mongodbConnection = '失败';
+        debugInfo.mongodbError = error instanceof Error ? error.message : String(error);
       }
+    } else {
+      debugInfo.mongodbConnection = '跳过（无URI）';
     }
-    
-    // 列出当前目录的文件
-    const currentDirFiles = fs.readdirSync(cwd)
-    
+
     return NextResponse.json({
-      cwd,
-      fileStatus,
-      currentDirFiles: currentDirFiles.slice(0, 20), // 只显示前20个文件
-      totalFiles: currentDirFiles.length
-    })
+      success: true,
+      debug: debugInfo
+    });
+    
   } catch (error) {
-    console.error('调试信息获取失败:', error)
     return NextResponse.json({ 
-      error: '调试信息获取失败',
-      message: error instanceof Error ? error.message : '未知错误'
-    }, { status: 500 })
+      error: '调试失败',
+      details: error instanceof Error ? error.message : String(error)
+    }, { status: 500 });
   }
 } 
