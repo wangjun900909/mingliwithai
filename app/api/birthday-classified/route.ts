@@ -20,10 +20,39 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // 确保日期格式正确
+    if (date && !date.includes('月')) {
+      // 如果日期格式不正确，尝试修复
+      const monthMatch = date.match(/(\d+)月(\d+)日/);
+      if (monthMatch) {
+        date = `${monthMatch[1]}月${monthMatch[2]}日`;
+        console.log('修复后date参数:', date);
+      }
+    }
+
+    // 如果日期仍然不正确，尝试从URL中提取
+    if (date && !date.includes('月')) {
+      const url = request.url;
+      const dateMatch = url.match(/date=([^&]+)/);
+      if (dateMatch) {
+        try {
+          const decodedDate = decodeURIComponent(dateMatch[1]);
+          if (decodedDate.includes('月')) {
+            date = decodedDate;
+            console.log('从URL重新解码date参数:', date);
+          }
+        } catch (e) {
+          console.log('URL重新解码失败');
+        }
+      }
+    }
+
     if (!date) {
       console.log('date参数为空，返回400错误');
       return NextResponse.json({ error: 'Date parameter is required' }, { status: 400 });
     }
+
+    console.log('最终使用的date参数:', date);
 
     // 按优先级尝试读取分类数据
     const dataFiles = [
