@@ -69,6 +69,7 @@ export async function GET(req: NextRequest) {
         });
       } catch (mongoError) {
         // MongoDB失败，回退到内存存储
+        console.error('MongoDB查询失败，回退到内存存储:', mongoError);
         const userData = memoryStorage.get(username);
         
         if (!userData) {
@@ -95,6 +96,7 @@ export async function GET(req: NextRequest) {
     }
     
   } catch (error) {
+    console.error('获取用户信息失败:', error);
     return NextResponse.json({ 
       error: '服务器错误',
       details: error instanceof Error ? error.message : String(error)
