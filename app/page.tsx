@@ -88,40 +88,32 @@ export default function Home() {
     const loadData = async () => {
       setLoading(true)
       try {
-        console.log('开始加载数据...')
         const dataResponse = await fetch('/api/data')
         const dataResult = await dataResponse.json()
-        console.log('API返回的数据:', dataResult)
         
         // 正确处理API返回的数据格式
         if (dataResult.matches) {
-          console.log('使用matches数据，数量:', Object.keys(dataResult.matches).length)
           setData(dataResult.matches)
         } else if (dataResult.error) {
-          console.error('API返回错误:', dataResult.error)
           // 如果API失败，尝试使用本地数据
           try {
             const localData = await fetch('/enhanced_date_matches.json')
             const localResult = await localData.json()
-            console.log('使用本地数据:', localResult)
             setData(localResult)
           } catch (localError) {
-            console.error('本地数据也失败:', localError)
+            // 本地数据也失败
           }
         } else {
-          console.log('使用原始数据:', dataResult)
           setData(dataResult)
         }
       } catch (error) {
-        console.error('加载数据失败:', error)
         // 如果API失败，尝试使用本地数据
         try {
           const localData = await fetch('/enhanced_date_matches.json')
           const localResult = await localData.json()
-          console.log('使用本地数据:', localResult)
           setData(localResult)
         } catch (localError) {
-          console.error('本地数据也失败:', localError)
+          // 本地数据也失败
         }
       } finally {
         setLoading(false)
@@ -134,7 +126,6 @@ export default function Home() {
   // 当数据加载完成后，立即查询当前选中的日期
   useEffect(() => {
     if (!loading && data && Object.keys(data).length > 0 && selectedMonth && selectedDay) {
-      console.log('数据加载完成，立即查询当前日期:', `${selectedMonth}月${selectedDay}日`)
       if (activeTab === 'main') {
         queryMainDate()
       } else if (activeTab === 'classified') {
@@ -146,7 +137,6 @@ export default function Home() {
   // 当选择改变时自动查询
   useEffect(() => {
     if (!loading && data && Object.keys(data).length > 0) {
-      console.log('选择改变，开始查询:', `${selectedMonth}月${selectedDay}日`)
       if (activeTab === 'main') {
         queryMainDate()
       } else if (activeTab === 'classified') {
@@ -158,12 +148,6 @@ export default function Home() {
   // 查询主日期
   const queryMainDate = () => {
     const dateStr = `${selectedMonth}月${selectedDay}日`
-    console.log('查询日期:', dateStr)
-    console.log('当前数据类型:', typeof data)
-    console.log('当前数据长度:', Array.isArray(data) ? data.length : Object.keys(data).length)
-    console.log('当前数据:', data)
-    console.log('查询的日期键:', dateStr)
-    console.log('数据中是否存在该键:', data && typeof data === 'object' && dateStr in data)
     
     let found = null
     if (Array.isArray(data)) {
@@ -179,7 +163,6 @@ export default function Home() {
       }
     }
     
-    console.log('找到的结果:', found)
     setResult(found || null)
   }
 
@@ -189,11 +172,9 @@ export default function Home() {
     try {
       const response = await fetch(`/api/birthday-classified?date=${encodeURIComponent(dateStr)}`)
       const classifiedData = await response.json()
-      console.log('分类数据结果:', classifiedData)
       setBirthdayClassified(classifiedData)
       setResult(null)
     } catch (error) {
-      console.error('查询分类生日介绍失败:', error)
       setBirthdayClassified({ 
         date: dateStr, 
         found: false,
