@@ -91,20 +91,11 @@ export default function Home() {
         const dataResponse = await fetch('/api/data')
         const dataResult = await dataResponse.json()
         console.log('API返回的数据:', dataResult)
-        // 如果返回的是包含matches的对象，则转换为数组格式
+        
+        // 直接使用API返回的matches对象
         if (dataResult.matches) {
-          // 将对象格式转换为数组格式
-          const matchesArray: MatchData[] = Object.entries(dataResult.matches).map(([date, matchData]) => ({
-            主日期: date,
-            匹配: matchData as {
-              情人伴侣: string[]
-              工作伙伴朋友: string[]
-              竞争对手天敌: string[]
-              灵魂伴侣: string[]
-            }
-          }))
-          console.log('转换后的数组数据:', matchesArray)
-          setData(matchesArray)
+          console.log('使用matches数据，数量:', Object.keys(dataResult.matches).length)
+          setData(dataResult.matches)
         } else {
           console.log('使用原始数据:', dataResult)
           setData(dataResult)
@@ -122,8 +113,23 @@ export default function Home() {
   const queryMainDate = () => {
     const dateStr = `${selectedMonth}月${selectedDay}日`
     console.log('查询日期:', dateStr)
-    console.log('当前数据长度:', data.length)
-    const found = data.find(item => item.主日期 === dateStr)
+    console.log('当前数据类型:', typeof data)
+    console.log('当前数据长度:', Array.isArray(data) ? data.length : Object.keys(data).length)
+    
+    let found = null
+    if (Array.isArray(data)) {
+      found = data.find(item => item.主日期 === dateStr)
+    } else {
+      // 如果data是对象格式，直接获取对应日期的数据
+      const matchData = data[dateStr]
+      if (matchData) {
+        found = {
+          主日期: dateStr,
+          匹配: matchData
+        }
+      }
+    }
+    
     console.log('找到的结果:', found)
     setResult(found || null)
   }
@@ -158,17 +164,18 @@ export default function Home() {
 
   // 当选择改变时自动查询
   useEffect(() => {
-    if (data.length > 0) {
-      console.log('数据已加载，开始查询，数据长度:', data.length)
+    const dataLength = Array.isArray(data) ? data.length : Object.keys(data).length
+    if (dataLength > 0 && !loading) {
+      console.log('数据已加载，开始查询，数据长度:', dataLength)
       if (activeTab === 'main') {
         queryMainDate()
       } else if (activeTab === 'classified') {
         queryBirthdayClassified()
       }
     } else {
-      console.log('数据还未加载完成，数据长度:', data.length)
+      console.log('数据还未加载完成或正在加载，数据长度:', dataLength, '加载状态:', loading)
     }
-  }, [selectedMonth, selectedDay, activeTab, data])
+  }, [selectedMonth, selectedDay, activeTab, data, loading])
 
   // 按日期排序函数
   const sortDates = (dates: string[]) => {
