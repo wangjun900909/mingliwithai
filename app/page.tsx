@@ -159,11 +159,14 @@ export default function Home() {
   // 当选择改变时自动查询
   useEffect(() => {
     if (data.length > 0) {
+      console.log('数据已加载，开始查询，数据长度:', data.length)
       if (activeTab === 'main') {
         queryMainDate()
       } else if (activeTab === 'classified') {
         queryBirthdayClassified()
       }
+    } else {
+      console.log('数据还未加载完成，数据长度:', data.length)
     }
   }, [selectedMonth, selectedDay, activeTab, data])
 
