@@ -23,7 +23,13 @@ async function getMongoClient() {
 
 // 检查是否在生产环境
 function isProduction() {
-  return process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production';
+  const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production';
+  console.log('环境检测:', {
+    NODE_ENV: process.env.NODE_ENV,
+    VERCEL_ENV: process.env.VERCEL_ENV,
+    isProduction: isProd
+  });
+  return isProd;
 }
 
 // GET - 获取用户信息
