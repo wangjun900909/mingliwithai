@@ -90,7 +90,25 @@ export default function Home() {
       try {
         const dataResponse = await fetch('/api/data')
         const dataResult = await dataResponse.json()
-        setData(dataResult)
+        console.log('API返回的数据:', dataResult)
+        // 如果返回的是包含matches的对象，则转换为数组格式
+        if (dataResult.matches) {
+          // 将对象格式转换为数组格式
+          const matchesArray: MatchData[] = Object.entries(dataResult.matches).map(([date, matchData]) => ({
+            主日期: date,
+            匹配: matchData as {
+              情人伴侣: string[]
+              工作伙伴朋友: string[]
+              竞争对手天敌: string[]
+              灵魂伴侣: string[]
+            }
+          }))
+          console.log('转换后的数组数据:', matchesArray)
+          setData(matchesArray)
+        } else {
+          console.log('使用原始数据:', dataResult)
+          setData(dataResult)
+        }
       } catch (error) {
         console.error('加载数据失败:', error)
       } finally {
@@ -103,7 +121,10 @@ export default function Home() {
   // 查询主日期
   const queryMainDate = () => {
     const dateStr = `${selectedMonth}月${selectedDay}日`
+    console.log('查询日期:', dateStr)
+    console.log('当前数据长度:', data.length)
     const found = data.find(item => item.主日期 === dateStr)
+    console.log('找到的结果:', found)
     setResult(found || null)
   }
 
