@@ -3,40 +3,28 @@ import { MongoClient } from 'mongodb';
 import { memoryStorage, UserData } from '../../lib/memoryStorage';
 
 // MongoDB连接配置
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://mongo:IDiVmmlPYUwpGvxVWpYNVEiMYjxcYGaB@mongodb.railway.internal:27017/mingliwithai?retryWrites=true&w=majority';
+const MONGODB_URI = process.env.MONGODB_URI;
 const DB_NAME = 'mingliwithai';
 const COLLECTION_NAME = 'users';
 
 // 获取MongoDB客户端
 async function getMongoClient() {
   try {
-    console.log('=== MongoDB连接开始 ===');
-    console.log('MongoDB URI:', MONGODB_URI);
-    console.log('环境变量:', {
-      NODE_ENV: process.env.NODE_ENV,
-      VERCEL_ENV: process.env.VERCEL_ENV,
-      MONGODB_URI: process.env.MONGODB_URI ? '已设置' : '未设置'
-    });
+    if (!MONGODB_URI) {
+      throw new Error('MONGODB_URI环境变量未设置');
+    }
     
     const client = new MongoClient(MONGODB_URI);
     await client.connect();
-    console.log('MongoDB连接成功');
     return client;
   } catch (error) {
-    console.error('MongoDB连接失败:', error);
     throw error;
   }
 }
 
 // 检查是否在生产环境
 function isProduction() {
-  const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production';
-  console.log('环境检测:', {
-    NODE_ENV: process.env.NODE_ENV,
-    VERCEL_ENV: process.env.VERCEL_ENV,
-    isProduction: isProd
-  });
-  return isProd;
+  return process.env.NODE_ENV === 'production';
 }
 
 // GET - 获取用户信息
@@ -49,25 +37,39 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: '用户名是必需的' }, { status: 400 });
     }
     
-    if (isProduction()) {
+    if (isProduction() && MONGODB_URI) {
       // 生产环境使用MongoDB
-      const client = await getMongoClient();
-      const db = client.db(DB_NAME);
-      const collection = db.collection(COLLECTION_NAME);
-      
-      const userData = await collection.findOne({ username });
-      await client.close();
-      
-      if (!userData) {
-        return NextResponse.json({ error: '用户不存在' }, { status: 404 });
+      try {
+        const client = await getMongoClient();
+        const db = client.db(DB_NAME);
+        const collection = db.collection(COLLECTION_NAME);
+        
+        const userData = await collection.findOne({ username });
+        await client.close();
+        
+        if (!userData) {
+          return NextResponse.json({ error: '用户不存在' }, { status: 404 });
+        }
+        
+        return NextResponse.json({
+          success: true,
+          data: userData
+        });
+      } catch (mongoError) {
+        // MongoDB失败，回退到内存存储
+        const userData = memoryStorage.get(username);
+        
+        if (!userData) {
+          return NextResponse.json({ error: '用户不存在' }, { status: 404 });
+        }
+        
+        return NextResponse.json({
+          success: true,
+          data: userData
+        });
       }
-      
-      return NextResponse.json({
-        success: true,
-        data: userData
-      });
     } else {
-      // 本地开发使用内存存储
+      // 本地开发或MongoDB不可用时使用内存存储
       const userData = memoryStorage.get(username);
       
       if (!userData) {
@@ -81,34 +83,27 @@ export async function GET(req: NextRequest) {
     }
     
   } catch (error) {
-    console.error('获取用户信息失败:', error);
-    return NextResponse.json({ error: '服务器错误' }, { status: 500 });
+    return NextResponse.json({ 
+      error: '服务器错误',
+      details: error instanceof Error ? error.message : String(error)
+    }, { status: 500 });
   }
 }
 
 // POST - 保存用户信息
 export async function POST(req: NextRequest) {
   try {
-    console.log('=== 保存用户信息开始 ===');
     const { username, userInfo, messages } = await req.json();
     
-    console.log('接收到的数据:', {
-      username,
-      userInfoKeys: userInfo ? Object.keys(userInfo) : [],
-      messagesCount: messages ? messages.length : 0
-    });
-    
     if (!username) {
-      console.log('用户名缺失，返回400错误');
       return NextResponse.json({ error: '用户名是必需的' }, { status: 400 });
     }
     
     const now = new Date().toISOString();
     
-    if (isProduction()) {
+    if (isProduction() && MONGODB_URI) {
       // 生产环境使用MongoDB
       try {
-        console.log('尝试使用MongoDB保存数据');
         const client = await getMongoClient();
         const db = client.db(DB_NAME);
         const collection = db.collection(COLLECTION_NAME);
@@ -118,7 +113,6 @@ export async function POST(req: NextRequest) {
         
         if (existingUser) {
           // 更新现有用户
-          console.log('更新现有用户:', username);
           await collection.updateOne(
             { username },
             {
@@ -131,7 +125,6 @@ export async function POST(req: NextRequest) {
           );
         } else {
           // 创建新用户
-          console.log('创建新用户:', username);
           const userData: UserData = {
             username,
             userInfo,
@@ -144,9 +137,7 @@ export async function POST(req: NextRequest) {
         }
         
         await client.close();
-        console.log('MongoDB保存成功');
       } catch (mongoError) {
-        console.error('MongoDB保存失败，回退到内存存储:', mongoError);
         // 如果MongoDB失败，回退到内存存储
         const existingUser = memoryStorage.has(username);
         
@@ -169,11 +160,9 @@ export async function POST(req: NextRequest) {
           
           memoryStorage.set(username, userData);
         }
-        console.log('内存存储保存成功');
       }
     } else {
-      // 本地开发使用内存存储
-      console.log('使用内存存储保存数据');
+      // 本地开发或MongoDB不可用时使用内存存储
       const existingUser = memoryStorage.has(username);
       
       if (existingUser) {
@@ -199,14 +188,12 @@ export async function POST(req: NextRequest) {
       }
     }
     
-    console.log('用户信息保存成功');
     return NextResponse.json({
       success: true,
       message: '用户信息已保存'
     });
     
   } catch (error) {
-    console.error('保存用户信息失败:', error);
     return NextResponse.json({ 
       error: '服务器错误',
       details: error instanceof Error ? error.message : String(error)
@@ -224,20 +211,29 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: '用户名是必需的' }, { status: 400 });
     }
     
-    if (isProduction()) {
+    if (isProduction() && MONGODB_URI) {
       // 生产环境使用MongoDB
-      const client = await getMongoClient();
-      const db = client.db(DB_NAME);
-      const collection = db.collection(COLLECTION_NAME);
-      
-      const result = await collection.deleteOne({ username });
-      await client.close();
-      
-      if (result.deletedCount === 0) {
-        return NextResponse.json({ error: '用户不存在' }, { status: 404 });
+      try {
+        const client = await getMongoClient();
+        const db = client.db(DB_NAME);
+        const collection = db.collection(COLLECTION_NAME);
+        
+        const result = await collection.deleteOne({ username });
+        await client.close();
+        
+        if (result.deletedCount === 0) {
+          return NextResponse.json({ error: '用户不存在' }, { status: 404 });
+        }
+      } catch (mongoError) {
+        // MongoDB失败，回退到内存存储
+        const deleted = memoryStorage.delete(username);
+        
+        if (!deleted) {
+          return NextResponse.json({ error: '用户不存在' }, { status: 404 });
+        }
       }
     } else {
-      // 本地开发使用内存存储
+      // 本地开发或MongoDB不可用时使用内存存储
       const deleted = memoryStorage.delete(username);
       
       if (!deleted) {
@@ -251,7 +247,9 @@ export async function DELETE(req: NextRequest) {
     });
     
   } catch (error) {
-    console.error('删除用户信息失败:', error);
-    return NextResponse.json({ error: '服务器错误' }, { status: 500 });
+    return NextResponse.json({ 
+      error: '服务器错误',
+      details: error instanceof Error ? error.message : String(error)
+    }, { status: 500 });
   }
 } 
