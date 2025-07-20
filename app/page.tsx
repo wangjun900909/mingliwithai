@@ -88,26 +88,72 @@ export default function Home() {
     const loadData = async () => {
       setLoading(true)
       try {
+        console.log('开始加载数据...')
         const dataResponse = await fetch('/api/data')
         const dataResult = await dataResponse.json()
         console.log('API返回的数据:', dataResult)
         
-        // 直接使用API返回的matches对象
+        // 正确处理API返回的数据格式
         if (dataResult.matches) {
           console.log('使用matches数据，数量:', Object.keys(dataResult.matches).length)
           setData(dataResult.matches)
+        } else if (dataResult.error) {
+          console.error('API返回错误:', dataResult.error)
+          // 如果API失败，尝试使用本地数据
+          try {
+            const localData = await fetch('/enhanced_date_matches.json')
+            const localResult = await localData.json()
+            console.log('使用本地数据:', localResult)
+            setData(localResult)
+          } catch (localError) {
+            console.error('本地数据也失败:', localError)
+          }
         } else {
           console.log('使用原始数据:', dataResult)
           setData(dataResult)
         }
       } catch (error) {
         console.error('加载数据失败:', error)
+        // 如果API失败，尝试使用本地数据
+        try {
+          const localData = await fetch('/enhanced_date_matches.json')
+          const localResult = await localData.json()
+          console.log('使用本地数据:', localResult)
+          setData(localResult)
+        } catch (localError) {
+          console.error('本地数据也失败:', localError)
+        }
       } finally {
         setLoading(false)
       }
     }
+
     loadData()
   }, [])
+
+  // 当数据加载完成后，立即查询当前选中的日期
+  useEffect(() => {
+    if (!loading && data && Object.keys(data).length > 0 && selectedMonth && selectedDay) {
+      console.log('数据加载完成，立即查询当前日期:', `${selectedMonth}月${selectedDay}日`)
+      if (activeTab === 'main') {
+        queryMainDate()
+      } else if (activeTab === 'classified') {
+        queryBirthdayClassified()
+      }
+    }
+  }, [data, loading, selectedMonth, selectedDay, activeTab])
+
+  // 当选择改变时自动查询
+  useEffect(() => {
+    if (!loading && data && Object.keys(data).length > 0) {
+      console.log('选择改变，开始查询:', `${selectedMonth}月${selectedDay}日`)
+      if (activeTab === 'main') {
+        queryMainDate()
+      } else if (activeTab === 'classified') {
+        queryBirthdayClassified()
+      }
+    }
+  }, [selectedMonth, selectedDay, activeTab])
 
   // 查询主日期
   const queryMainDate = () => {
@@ -115,13 +161,16 @@ export default function Home() {
     console.log('查询日期:', dateStr)
     console.log('当前数据类型:', typeof data)
     console.log('当前数据长度:', Array.isArray(data) ? data.length : Object.keys(data).length)
+    console.log('当前数据:', data)
+    console.log('查询的日期键:', dateStr)
+    console.log('数据中是否存在该键:', data && typeof data === 'object' && dateStr in data)
     
     let found = null
     if (Array.isArray(data)) {
       found = data.find(item => item.主日期 === dateStr)
     } else {
       // 如果data是对象格式，直接获取对应日期的数据
-      const matchData = data[dateStr]
+      const matchData = (data as any)[dateStr]
       if (matchData) {
         found = {
           主日期: dateStr,
@@ -134,14 +183,13 @@ export default function Home() {
     setResult(found || null)
   }
 
-
-
   // 查询分类生日介绍
   const queryBirthdayClassified = async () => {
     const dateStr = `${selectedMonth}月${selectedDay}日`
     try {
       const response = await fetch(`/api/birthday-classified?date=${encodeURIComponent(dateStr)}`)
       const classifiedData = await response.json()
+      console.log('分类数据结果:', classifiedData)
       setBirthdayClassified(classifiedData)
       setResult(null)
     } catch (error) {
@@ -161,21 +209,6 @@ export default function Home() {
       })
     }
   }
-
-  // 当选择改变时自动查询
-  useEffect(() => {
-    const dataLength = Array.isArray(data) ? data.length : Object.keys(data).length
-    if (dataLength > 0 && !loading) {
-      console.log('数据已加载，开始查询，数据长度:', dataLength)
-      if (activeTab === 'main') {
-        queryMainDate()
-      } else if (activeTab === 'classified') {
-        queryBirthdayClassified()
-      }
-    } else {
-      console.log('数据还未加载完成或正在加载，数据长度:', dataLength, '加载状态:', loading)
-    }
-  }, [selectedMonth, selectedDay, activeTab, data, loading])
 
   // 按日期排序函数
   const sortDates = (dates: string[]) => {
