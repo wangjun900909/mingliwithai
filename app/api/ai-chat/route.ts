@@ -257,8 +257,7 @@ async function tryYuanbaoService(serviceUrl: string, userContext: string) {
         'Connection': 'keep-alive'
       },
       body: JSON.stringify({
-        input: userContext,
-        custom_prompt: "请基于用户信息提供个性化的建议和分析，用友好的语气回答。请确保回答详细、实用且结构清晰。"
+        input: userContext
       }),
       signal: controller.signal
     });
@@ -439,20 +438,6 @@ ${dateMatches}
 
 对话历史：
 ${messages.map((msg: Message) => `${msg.role === 'user' ? '用户' : 'AI'}: ${msg.content}`).join('\n')}
-
-请基于以上信息，为用户提供个性化的建议和分析。重点关注：
-1. 基于生日和MBTI的性格分析
-2. 职业发展建议（考虑年龄和婚姻状况）
-3. 人际关系指导（考虑家庭状况）
-4. 个人成长建议（考虑人生阶段）
-5. 家庭生活建议（如果已婚或有子女）
-6. 工作与家庭平衡（如果已婚或有子女）
-7. 情感匹配分析（基于生日和性格的伴侣建议）
-8. 身心灵健康指导（结合年龄和人生阶段的建议）
-9. 名人榜样分析（同年龄段名人的成功经验）
-10. 能量获取指导（基于性格和年龄的能量来源建议）
-
-请结合生日介绍和相关生日匹配信息，提供更精准的个性化分析。
     `.trim();
     
     // 尝试调用服务
