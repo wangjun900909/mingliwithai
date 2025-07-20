@@ -1,39 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { MongoClient } from 'mongodb';
+import { memoryStorage, UserData } from '../../lib/memoryStorage';
 
 // MongoDB连接配置
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://mongo:IDiVmmlPYUwpGvxVWpYNVEiMYjxcYGaB@mongodb.railway.internal:27017/mingliwithai?retryWrites=true&w=majority';
 const DB_NAME = 'mingliwithai';
 const COLLECTION_NAME = 'users';
-
-// 临时内存存储（在本地开发时使用）
-const memoryStorage = new Map();
-
-// 用户信息接口
-interface UserData {
-  username: string;
-  userInfo: {
-    mbti?: string;
-    gender?: string;
-    profession?: string;
-    status?: string;
-    age?: string;
-    maritalStatus?: string;
-    hasChildren?: string;
-    birthday?: {
-      date?: string;
-      month?: number;
-      day?: number;
-    };
-  };
-  messages: Array<{
-    role: string;
-    content: string;
-    timestamp: string;
-  }>;
-  createdAt: string;
-  updatedAt: string;
-}
 
 // 获取MongoDB客户端
 async function getMongoClient() {
