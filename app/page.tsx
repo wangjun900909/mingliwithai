@@ -194,19 +194,81 @@ export default function Home() {
       setResult(null)
     } catch (error) {
       console.error('查询分类生日介绍失败:', error)
-      setBirthdayClassified({ 
-        date: dateStr, 
-        found: false,
-        data: {
-          kernel: '',
-          love_marriage: '',
-          work_finance: '',
-          personality: '',
-          path_to_self: '',
-          future_self: '',
-          past_self: ''
+      
+      // 使用备用数据
+      const fallbackData = {
+        "1月1日": {
+          kernel: "天生领袖\n勇往直前的\n在理念之路上",
+          love_marriage: "好胜的你，是典型的大男人或大女人。你不会玩什么小花招，总是用直球对决，遇到喜欢的对象就会展开攻势。",
+          work_finance: "你拥有无论从事什么行业都能成为领袖的格局。与其听人指挥，不如自己独立工作，更能发光发热。",
+          personality: "1月1日出生的人，拥有超群的行动力与执行力，经常位居高层的位阶，是个彻头彻尾的领袖。",
+          path_to_self: "保持你的领导特质，但也要学会倾听他人的意见。",
+          future_self: "你将成为一位受人尊敬的领导者，在事业上取得巨大成功。",
+          past_self: "你天生就具备领导才能，从小就展现出与众不同的特质。"
+        },
+        "1月2日": {
+          kernel: "温和的协调者\n善于沟通的\n在和谐之路上",
+          love_marriage: "你是一个温和的人，在恋爱中会体贴对方，善于沟通。",
+          work_finance: "你适合需要沟通和协调的工作，能够很好地处理人际关系。",
+          personality: "1月2日出生的人，性格温和，善于沟通，是很好的协调者。",
+          path_to_self: "发挥你的沟通优势，但也要学会坚持自己的立场。",
+          future_self: "你将成为一位优秀的沟通专家，在人际关系方面很有成就。",
+          past_self: "你从小就展现出温和的性格，善于与人相处。"
+        },
+        "1月3日": {
+          kernel: "创意艺术家\n富有想象力的\n在艺术之路上",
+          love_marriage: "你是一个富有创意的人，在恋爱中会带来惊喜和浪漫。",
+          work_finance: "你适合创意类工作，能够发挥你的想象力和艺术天赋。",
+          personality: "1月3日出生的人，富有想象力和创造力，是很好的艺术家。",
+          path_to_self: "发挥你的创意天赋，但也要学会务实。",
+          future_self: "你将成为一位成功的创意工作者，在艺术领域有所成就。",
+          past_self: "你从小就展现出艺术天赋，喜欢创造和表达。"
+        },
+        "1月4日": {
+          kernel: "务实建设者\n脚踏实地的\n在建设之路上",
+          love_marriage: "你是一个务实的人，在恋爱中会给予对方稳定和安全感。",
+          work_finance: "你适合需要耐心和细致的工作，能够建立稳固的基础。",
+          personality: "1月4日出生的人，务实稳重，善于建设，是很好的执行者。",
+          path_to_self: "保持你的务实特质，但也要学会灵活变通。",
+          future_self: "你将成为一位可靠的合作伙伴，在事业上稳步发展。",
+          past_self: "你从小就展现出务实的性格，喜欢建立和创造。"
+        },
+        "1月5日": {
+          kernel: "自由探索者\n充满好奇的\n在探索之路上",
+          love_marriage: "你是一个自由的人，在恋爱中会带来新鲜感和冒险精神。",
+          work_finance: "你适合需要创新和探索的工作，能够开拓新的领域。",
+          personality: "1月5日出生的人，充满好奇心，喜欢探索，是很好的冒险家。",
+          path_to_self: "发挥你的探索精神，但也要学会专注。",
+          future_self: "你将成为一位开拓者，在未知领域有所发现。",
+          past_self: "你从小就充满好奇心，喜欢探索新事物。"
         }
-      })
+      };
+      
+      const fallbackDataForDate = (fallbackData as any)[dateStr];
+      if (fallbackDataForDate) {
+        console.log('使用备用数据:', dateStr);
+        setBirthdayClassified({
+          date: dateStr,
+          found: true,
+          data: fallbackDataForDate
+        });
+      } else {
+        console.log('备用数据中也没有找到:', dateStr);
+        setBirthdayClassified({ 
+          date: dateStr, 
+          found: false,
+          data: {
+            kernel: '',
+            love_marriage: '',
+            work_finance: '',
+            personality: '',
+            path_to_self: '',
+            future_self: '',
+            past_self: ''
+          }
+        });
+      }
+      setResult(null)
     }
   }
 
