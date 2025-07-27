@@ -35,6 +35,7 @@ export default function Home() {
   const [selectedDay, setSelectedDay] = useState(1)
   const [data, setData] = useState<MatchData[]>([])
   const [loading, setLoading] = useState(false)
+  const [queryLoading, setQueryLoading] = useState(false)
   const [activeTab, setActiveTab] = useState<'main' | 'classified'>('main')
   const [result, setResult] = useState<MatchData | null>(null)
 
@@ -123,31 +124,27 @@ export default function Home() {
     loadData()
   }, [])
 
-  // 当数据加载完成后，立即查询当前选中的日期
+  // 当数据加载完成或选择改变时自动查询
   useEffect(() => {
-    if (!loading && data && Object.keys(data).length > 0 && selectedMonth && selectedDay) {
+    if (!loading && data && Object.keys(data).length > 0 && !queryLoading) {
       if (activeTab === 'main') {
         queryMainDate()
       } else if (activeTab === 'classified') {
         queryBirthdayClassified()
       }
     }
-  }, [data, loading, selectedMonth, selectedDay, activeTab])
+  }, [data, loading, selectedMonth, selectedDay, activeTab, queryLoading])
 
-  // 当选择改变时自动查询
-  useEffect(() => {
-    if (!loading && data && Object.keys(data).length > 0) {
-      if (activeTab === 'main') {
-        queryMainDate()
-      } else if (activeTab === 'classified') {
-        queryBirthdayClassified()
-      }
-    }
-  }, [selectedMonth, selectedDay, activeTab])
-
-  // 查询主日期
+  // 查询主日期 - 添加防抖机制
   const queryMainDate = () => {
     const dateStr = `${selectedMonth}月${selectedDay}日`
+    
+    // 如果当前结果已经是这个日期，不重复查询
+    if (result && result.主日期 === dateStr) {
+      return
+    }
+    
+    setQueryLoading(true)
     
     let found = null
     if (Array.isArray(data)) {
@@ -164,17 +161,27 @@ export default function Home() {
     }
     
     setResult(found || null)
+    setQueryLoading(false)
   }
 
-  // 查询分类生日介绍
+  // 查询分类生日介绍 - 添加防抖机制
   const queryBirthdayClassified = async () => {
     const dateStr = `${selectedMonth}月${selectedDay}日`
+    
+    // 如果正在查询中，不重复调用
+    if (birthdayClassified && birthdayClassified.date === dateStr && birthdayClassified.found) {
+      return
+    }
+    
+    setQueryLoading(true)
+    
     try {
       const response = await fetch(`/api/birthday-classified?date=${encodeURIComponent(dateStr)}`)
       const classifiedData = await response.json()
       setBirthdayClassified(classifiedData)
       setResult(null)
     } catch (error) {
+      console.error('查询分类生日介绍失败:', error)
       setBirthdayClassified({ 
         date: dateStr, 
         found: false,
@@ -189,6 +196,8 @@ export default function Home() {
         }
       });
       setResult(null)
+    } finally {
+      setQueryLoading(false)
     }
   }
 
@@ -413,6 +422,11 @@ export default function Home() {
             <div className="text-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
               <p className="text-gray-600 mt-2">加载中...</p>
+            </div>
+          ) : queryLoading ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500 mx-auto"></div>
+              <p className="text-gray-600 mt-2">查询中...</p>
             </div>
           ) : activeTab === 'main' ? (
             result ? (
