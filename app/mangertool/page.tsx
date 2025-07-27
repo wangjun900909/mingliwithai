@@ -30,6 +30,7 @@ interface UserData {
 export default function ManagerTool() {
   const [users, setUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'createdAt' | 'updatedAt' | 'username'>('updatedAt');
@@ -38,19 +39,35 @@ export default function ManagerTool() {
   // 获取所有用户数据
   const fetchAllUsers = async () => {
     try {
-      const response = await fetch('/api/users/all');
+      console.log('开始获取用户数据...')
+      setError(null)
+      const response = await fetch('/api/users/all')
+      console.log('响应状态:', response.status, response.statusText)
+      
       if (response.ok) {
-        const data = await response.json();
-        console.log('API返回的数据:', data);
-        console.log('用户数量:', data.users?.length || 0);
-        setUsers(data.users || []);
+        const data = await response.json()
+        console.log('API返回的数据:', data)
+        console.log('用户数量:', data.users?.length || 0)
+        
+        if (data.success && Array.isArray(data.users)) {
+          setUsers(data.users)
+          console.log('成功设置用户数据，数量:', data.users.length)
+        } else {
+          console.error('API返回数据格式错误:', data)
+          setUsers([])
+          setError('API返回数据格式错误')
+        }
       } else {
-        console.error('获取用户列表失败');
+        console.error('获取用户列表失败:', response.status, response.statusText)
+        setUsers([])
+        setError(`请求失败: ${response.status} ${response.statusText}`)
       }
     } catch (error) {
-      console.error('获取用户列表失败:', error);
+      console.error('获取用户列表失败:', error)
+      setUsers([])
+      setError(error instanceof Error ? error.message : '未知错误')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
   };
 
@@ -191,8 +208,28 @@ export default function ManagerTool() {
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
             <p className="text-gray-600 mt-2">加载中...</p>
           </div>
+        ) : error ? (
+          <div className="text-center py-8">
+            <div className="text-red-600 mb-4">
+              <h3 className="text-lg font-semibold">加载失败</h3>
+              <p>{error}</p>
+            </div>
+            <button 
+              onClick={fetchAllUsers}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            >
+              重试
+            </button>
+          </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* 调试信息 */}
+            <div className="lg:col-span-3 bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+              <h3 className="text-sm font-semibold text-yellow-800 mb-2">调试信息</h3>
+              <p className="text-xs text-yellow-700">原始用户数量: {users.length}</p>
+              <p className="text-xs text-yellow-700">过滤后用户数量: {filteredAndSortedUsers.length}</p>
+              <p className="text-xs text-yellow-700">搜索词: "{searchTerm}"</p>
+            </div>
             {/* 用户列表 */}
             <div className="lg:col-span-1">
               <div className="bg-white rounded-lg shadow-sm">
