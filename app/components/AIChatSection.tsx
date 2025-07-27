@@ -30,13 +30,17 @@ export default function AIChatSection({ birthdayData }: { birthdayData: any }) {
   const [isLoadingUser, setIsLoadingUser] = useState(false);
   const [isSavingUser, setIsSavingUser] = useState(false);
   const [currentBirthdayData, setCurrentBirthdayData] = useState<any>(birthdayData);
+  const [hasLoadedUserData, setHasLoadedUserData] = useState(false);
   const messagesEndRef = useRef<null | HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // 当birthdayData变化时更新currentBirthdayData
+  // 当birthdayData变化时更新currentBirthdayData，但只在没有用户数据时
   useEffect(() => {
-    setCurrentBirthdayData(birthdayData);
-  }, [birthdayData]);
+    // 只有在没有加载到用户生日数据时才使用传入的birthdayData
+    if (!hasLoadedUserData && (!currentBirthdayData || !currentBirthdayData.date)) {
+      setCurrentBirthdayData(birthdayData);
+    }
+  }, [birthdayData, hasLoadedUserData]);
 
   // 从cookie加载用户信息
   useEffect(() => {
@@ -67,12 +71,17 @@ export default function AIChatSection({ birthdayData }: { birthdayData: any }) {
       if (response.ok) {
         const data = await response.json();
         if (data.success && data.data) {
+          console.log('加载的用户数据:', data.data);
           setUserInfo(data.data.userInfo);
           setMessages(data.data.messages || []);
           
           // 如果加载的数据中有生日信息，更新currentBirthdayData
           if (data.data.userInfo.birthday) {
+            console.log('设置生日数据:', data.data.userInfo.birthday);
             setCurrentBirthdayData(data.data.userInfo.birthday);
+            setHasLoadedUserData(true);
+          } else {
+            console.log('用户数据中没有生日信息');
           }
           
           alert('用户信息加载成功！');
@@ -474,6 +483,10 @@ export default function AIChatSection({ birthdayData }: { birthdayData: any }) {
               清除信息
             </button>
           </div>
+        </div>
+        {/* 调试信息 */}
+        <div className="text-xs text-gray-400 mt-1">
+          调试: currentBirthdayData = {JSON.stringify(currentBirthdayData)}
         </div>
       </div>
     </div>
