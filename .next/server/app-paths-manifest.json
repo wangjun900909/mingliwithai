@@ -1,3 +1,4 @@
 {
-  "/api/users/route": "app/api/users/route.js"
+  "/mangertool/page": "app/mangertool/page.js",
+  "/api/users/all/route": "app/api/users/all/route.js"
 }

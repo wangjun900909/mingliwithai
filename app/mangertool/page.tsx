@@ -41,6 +41,8 @@ export default function ManagerTool() {
       const response = await fetch('/api/users/all');
       if (response.ok) {
         const data = await response.json();
+        console.log('API返回的数据:', data);
+        console.log('用户数量:', data.users?.length || 0);
         setUsers(data.users || []);
       } else {
         console.error('获取用户列表失败');
@@ -89,6 +91,11 @@ export default function ManagerTool() {
         return aValue < bValue ? 1 : -1;
       }
     });
+
+  // 添加调试信息
+  console.log('原始用户数量:', users.length);
+  console.log('过滤后用户数量:', filteredAndSortedUsers.length);
+  console.log('搜索词:', searchTerm);
 
   // 格式化日期
   const formatDate = (dateString: string) => {
