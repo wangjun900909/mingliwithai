@@ -1,21 +1,5 @@
 {
   "/_not-found/page": "app/_not-found/page.js",
-  "/api/birthday-classified/route": "app/api/birthday-classified/route.js",
-  "/api/cycle-numbers/route": "app/api/cycle-numbers/route.js",
-  "/api/ai-chat/route": "app/api/ai-chat/route.js",
-  "/api/birthday-intro/route": "app/api/birthday-intro/route.js",
-  "/api/data/route": "app/api/data/route.js",
-  "/api/feedback/route": "app/api/feedback/route.js",
-  "/api/debug/route": "app/api/debug/route.js",
-  "/api/knowledge-base/route": "app/api/knowledge-base/route.js",
-  "/api/health/route": "app/api/health/route.js",
-  "/health/page": "app/health/page.js",
-  "/api/users-mongodb/route": "app/api/users-mongodb/route.js",
-  "/api/users/route": "app/api/users/route.js",
-  "/api/reverse-index/route": "app/api/reverse-index/route.js",
-  "/api/users/all/route": "app/api/users/all/route.js",
-  "/knowledge-base/page": "app/knowledge-base/page.js",
-  "/mangertool/page": "app/mangertool/page.js",
   "/page": "app/page.js",
-  "/cycle-numbers/page": "app/cycle-numbers/page.js"
+  "/api/users/route": "app/api/users/route.js"
 }

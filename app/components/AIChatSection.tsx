@@ -29,8 +29,14 @@ export default function AIChatSection({ birthdayData }: { birthdayData: any }) {
   const [selectedAIService, setSelectedAIService] = useState('yuanbao');
   const [isLoadingUser, setIsLoadingUser] = useState(false);
   const [isSavingUser, setIsSavingUser] = useState(false);
+  const [currentBirthdayData, setCurrentBirthdayData] = useState<any>(birthdayData);
   const messagesEndRef = useRef<null | HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // 当birthdayData变化时更新currentBirthdayData
+  useEffect(() => {
+    setCurrentBirthdayData(birthdayData);
+  }, [birthdayData]);
 
   // 从cookie加载用户信息
   useEffect(() => {
@@ -63,6 +69,12 @@ export default function AIChatSection({ birthdayData }: { birthdayData: any }) {
         if (data.success && data.data) {
           setUserInfo(data.data.userInfo);
           setMessages(data.data.messages || []);
+          
+          // 如果加载的数据中有生日信息，更新currentBirthdayData
+          if (data.data.userInfo.birthday) {
+            setCurrentBirthdayData(data.data.userInfo.birthday);
+          }
+          
           alert('用户信息加载成功！');
         }
       } else if (response.status === 404) {
@@ -94,7 +106,7 @@ export default function AIChatSection({ birthdayData }: { birthdayData: any }) {
           username,
           userInfo: {
             ...userInfo,
-            birthday: birthdayData
+            birthday: currentBirthdayData
           },
           messages
         })
@@ -141,7 +153,7 @@ export default function AIChatSection({ birthdayData }: { birthdayData: any }) {
         ],
         userInfo: {
           ...userInfo,
-          birthday: birthdayData
+          birthday: currentBirthdayData
         },
         aiService: selectedAIService
       };
@@ -436,7 +448,7 @@ export default function AIChatSection({ birthdayData }: { birthdayData: any }) {
       {/* 快捷操作 */}
       <div className="mt-3">
         <div className="flex justify-between text-xs text-gray-500">
-          <span>当前生日: {birthdayData?.date || '未选择'}</span>
+          <span>当前生日: {currentBirthdayData?.date || '未选择'}</span>
           <div className="flex gap-2">
             <button 
               onClick={() => setShowForm(!showForm)}
