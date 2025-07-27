@@ -1,5 +1,5 @@
 {
-  "/test-api/page": "app/test-api/page.js",
   "/mangertool/page": "app/mangertool/page.js",
+  "/simple-test/page": "app/simple-test/page.js",
   "/api/users/all/route": "app/api/users/all/route.js"
 }
